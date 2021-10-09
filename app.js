@@ -30,7 +30,8 @@ const userdataSchema = new mongoose.Schema({
     email:String,
     password:String,
     googleId:String,
-    facebookId:String
+    facebookId:String,
+    secret:String
 });
 
 // userdataSchema.plugin(encrypt,{secret:process.env.SECRETS , encryptedFields:["password"]});
@@ -96,6 +97,39 @@ app.get('/auth/facebook/secrets',passport.authenticate('facebook',{failureRedire
     res.redirect('/secrets');
 })
 
+app.get('/submit',function(req,res)
+{
+    if (req.isAuthenticated)
+    {
+        res.render('submit');
+    }
+    else
+    {
+        res.redirect('/login');
+    }
+})
+
+app.post('/submit',function(req,res)
+{
+    
+    Data.findById(req.user.id,function(err,foundUser)
+    {
+        if(err)
+        {
+            console.log(err);
+        } else {
+            foundUser.secret = req.body.secret;
+            foundUser.save(function(err)
+            {
+                if(!err)
+                {
+                    res.redirect('/secrets');
+                }
+            })
+        }
+    })
+})
+
 app.get('/',function(req,res)
 {
     res.render('home');
@@ -108,14 +142,15 @@ app.get('/login',function(req,res)
 
 app.get('/secrets',function(req,res)
 {
-    if(req.isAuthenticated())
+    Data.find({secret:{$ne:null}},function(err,allSecrets)
     {
-        res.render('secrets');
-    }
-    else
-    {
-        res.redirect('/login');
-    }
+        if(err)
+        {
+            console.log(err);
+        } else {
+            res.render('secrets',{userSecrets:allSecrets});
+        }
+    })
 })
 
 app.get('/register',function(req,res)
